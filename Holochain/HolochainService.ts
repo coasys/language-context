@@ -2,10 +2,9 @@ import { AdminWebsocket, AgentPubKey, AppWebsocket, CapSecret } from '@holochain
 import low from 'lowdb'
 import FileSync from 'lowdb/adapters/FileSync'
 import path from 'path'
-import { execHolochain } from '@holochain-open-dev/holochain-run-dna/src/execHolochain'
-//import { rootPath } from 'electron-root-path'
 import fs from 'fs'
 import HolochainLanguageDelegate from "./HolochainLanguageDelegate"
+import {runSandbox, readSandboxes, createSandbox} from "./hc-execution"
 import type Dna from "./dna"
 
 export const fakeCapSecret = (): CapSecret => Buffer.from(Array(64).fill('aa').join(''), 'hex')
@@ -19,37 +18,47 @@ export default class HolochainService {
     #dataPath: string
     #ready: Promise<void>
 
-    constructor(configPath, dataPath, rootPath) {
+    constructor(sandboxPath, dataPath, resourcePath) {
         let resolveReady
         this.#ready = new Promise(resolve => resolveReady = resolve)
 
+        console.log("HolochainService: Creating low-db instance for holochain-serivce");
         this.#dataPath = dataPath
         this.#db = low(new FileSync(path.join(dataPath, 'holochain-service.json')))
         this.#db.defaults({pubKeys: []}).write()
 
-        const holochainAdminPort = 1337
-        process.env.PATH = `${rootPath}:${process.env.PATH}`
-        execHolochain(holochainAdminPort, configPath).then(async result => {
-            try {
-                this.#adminPort = result[1]
-                this.#adminWebsocket = await AdminWebsocket.connect(
-                    `ws://localhost:${this.#adminPort}`
-                )
+        const holochainAppPort = 1337;
+        const holochainAdminPort = 2000;
 
-                console.debug("Holochain admin interface connected on port", this.#adminPort)
-                this.#appPort = this.#adminPort + 1
+        console.log("HolochainService: attempting to read sandboxes");
+        let sandboxes = readSandboxes(`${resourcePath}/hc`);
+        console.log("HolochainService: found sandboxes", sandboxes);
+        if (sandboxes.length == 0) {
+            createSandbox(`${resourcePath}/hc`, sandboxPath);
+        };
+        sandboxes = readSandboxes(`${resourcePath}/hc`);
+        console.log("HolochainService: Running with sanboxes:", sandboxes, "and using sandbox:", sandboxes[0]);
+
+        runSandbox(`${resourcePath}/hc`, `${resourcePath}/holochain`, sandboxes[0], holochainAdminPort).then(async result => {
+            console.log("HolochainService: Sandbox running... Attempting connection\n\n\n");
+            try {
+                this.#adminPort = holochainAdminPort;
+                this.#adminWebsocket = await AdminWebsocket.connect(`ws://localhost:${this.#adminPort}`)
+
+                console.debug("HolochainService: Holochain admin interface connected on port", this.#adminPort)
+                this.#appPort = holochainAppPort;
                 this.#adminWebsocket.attachAppInterface({ port: this.#appPort })
                 this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`)
-                console.debug("Holochain app interface connected on port", this.#appPort)
+                console.debug("HolochainService: Holochain app interface connected on port", this.#appPort)
                 resolveReady()
             } catch(e) {
-                console.error("Error intializing Holochain conductor:", e)
+                console.error("HolochainService: Error intializing Holochain conductor:", e)
             }
-
         })
     }
 
     async pubKeyForLanguage(lang: string): Promise<AgentPubKey> {
+        //lang = "static2";
         const alreadyExisting = this.#db.get('pubKeys').find({lang}).value()
         if(alreadyExisting) {
             console.debug("Found existing pubKey entry", alreadyExisting, "for language:", lang)
@@ -67,8 +76,8 @@ export default class HolochainService {
     async ensureInstallDNAforLanguage(lang: string, dnas: Dna[]) {
         await this.#ready
 
-
-        const activeApps = await this.#adminWebsocket.listActiveApps()
+        const activeApps = await this.#adminWebsocket.listActiveApps();
+        console.log("HolochainService: Found running apps:", activeApps);
         if(!activeApps.includes(lang)) {
 
             let installed
@@ -81,38 +90,26 @@ export default class HolochainService {
                 // const cellId = HolochainService.dnaID(lang, nick)
 
                 for (let dna of dnas) {
+                    //console.log("HolochainService: Installing DNA:", dna, "at data path:", this.#dataPath, "\n");
                     const p = path.join(this.#dataPath, `${lang}-${dna.nick}.dna`);
                     const pubKey = await this.pubKeyForLanguage(lang);
                     fs.writeFileSync(p, dna.file);
                     const hash = await this.#adminWebsocket.registerDna({
                         path: p
                     })
+                    console.log("Installing DNA");
                     await this.#adminWebsocket.installApp({
-                        installed_app_id: "test", agent_key: pubKey, dnas: [{hash, nick: dna.nick}]
+                        installed_app_id: lang, agent_key: pubKey, dnas: [{hash: hash, nick: dna.nick}]
                     })
                 }
-              
-                // await this.#adminWebsocket.installApp({
-                //     agent_key: await this.pubKeyForLanguage(lang),
-                //     installed_app_id: lang,
-                //     dnas: dnas.map((dna) => {
-                //         const p = path.join(this.#dataPath, `${lang}-${dna.nick}.dna.gz`)
-                //         fs.writeFileSync(p, dna.file)
-                //         return { nick: dna.nick, path: p };
-                //     }),
-                // })
-
-                // installedCellIds = await this.#adminWebsocket.listCellIds()
-                // console.debug("HolochainService: Installed cells after:", installedCellIds)
                 installed = true
             } catch(e) {
-                if(!e.data?.data?.indexOf('AppAlreadyInstalled')) {
-                    console.error("Error during install of DNA:", e)
-                    installed = false
-                } else {
-                    console.debug("HolochainService: App", lang, "already installed")
-                    installed = true
-                }
+                // if(!e.data?.data?.indexOf('AppAlreadyInstalled')) {
+                //     console.error("Error during install of DNA:", e)
+                //     installed = false
+                // } else {
+                console.error(e);
+                installed = false
             }
 
             if(!installed)
@@ -187,8 +184,6 @@ export default class HolochainService {
             return e
         }
     }
-
-
 }
 
 const sleep = (ms) =>
