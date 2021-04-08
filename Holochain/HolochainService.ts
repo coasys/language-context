@@ -47,7 +47,7 @@ export default class HolochainService {
 
                 console.debug("HolochainService: Holochain admin interface connected on port", this.#adminPort)
                 this.#appPort = holochainAppPort;
-                this.#adminWebsocket.attachAppInterface({ port: this.#appPort })
+                //this.#adminWebsocket.attachAppInterface({ port: this.#appPort })
                 this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`)
                 console.debug("HolochainService: Holochain app interface connected on port", this.#appPort)
                 resolveReady()
