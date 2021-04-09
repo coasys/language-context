@@ -28,10 +28,6 @@ export async function runSandbox(hcPath, holochainPath, sbPath, adminPort) {
         stdio: "inherit",
         env: { ...process.env, LAIR_DIR: `${sbPath}/keystore` },
     });
-    process.on("SIGINT", function () {
-        fs.unlinkSync(`${sbPath}/keystore/pid`)
-        process.exit();
-    });
     await sleep(500);
     
     let res = child_process.spawn(`${hcPath}`, ["sandbox", "-f", adminPort, "--holochain-path", `${holochainPath}`, "run", "-e", sbPath],
@@ -43,6 +39,12 @@ export async function runSandbox(hcPath, holochainPath, sbPath, adminPort) {
             },
         }
     );
+    process.on("SIGINT", function () {
+        fs.unlinkSync(`${sbPath}/keystore/pid`)
+        res.kill("SIGINT");
+        process.exit();
+    });
+
     await sleep(3000);
     return res;
 }
