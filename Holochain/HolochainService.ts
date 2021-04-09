@@ -4,8 +4,9 @@ import FileSync from 'lowdb/adapters/FileSync'
 import path from 'path'
 import fs from 'fs'
 import HolochainLanguageDelegate from "./HolochainLanguageDelegate"
-import {runSandbox, readSandboxes, createSandbox} from "./hc-execution"
+import {runSandbox, readSandboxes, createSandbox, stopProcesses} from "./hc-execution"
 import type Dna from "./dna"
+import { ChildProcess } from 'child_process'
 
 export const fakeCapSecret = (): CapSecret => Buffer.from(Array(64).fill('aa').join(''), 'hex')
 
@@ -17,6 +18,8 @@ export default class HolochainService {
     #appWebsocket: AppWebsocket
     #dataPath: string
     #ready: Promise<void>
+    #sbPath: string
+    #hcProcess: ChildProcess
 
     constructor(sandboxPath, dataPath, resourcePath) {
         let resolveReady
@@ -38,9 +41,11 @@ export default class HolochainService {
         };
         sandboxes = readSandboxes(`${resourcePath}/hc`);
         console.log("HolochainService: Running with sanboxes:", sandboxes, "and using sandbox:", sandboxes[0]);
+        this.#sbPath = sandboxes[0];
 
         runSandbox(`${resourcePath}/hc`, `${resourcePath}/holochain`, sandboxes[0], holochainAdminPort).then(async result => {
             console.log("HolochainService: Sandbox running... Attempting connection\n\n\n");
+            this.#hcProcess = result;
             try {
                 this.#adminPort = holochainAdminPort;
                 this.#adminWebsocket = await AdminWebsocket.connect(`ws://localhost:${this.#adminPort}`)
@@ -55,6 +60,10 @@ export default class HolochainService {
                 console.error("HolochainService: Error intializing Holochain conductor:", e)
             }
         })
+    }
+
+    stop() {
+        stopProcesses(this.#sbPath, this.#hcProcess)
     }
 
     async pubKeyForLanguage(lang: string): Promise<AgentPubKey> {

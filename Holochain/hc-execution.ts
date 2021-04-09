@@ -23,6 +23,11 @@ export function readSandboxes(hcPath) {
     }
 }
 
+export function stopProcesses(sbPath, hcProcess) {
+    fs.unlinkSync(`${sbPath}/keystore/pid`)
+    hcProcess.kill("SIGINT");
+}
+
 export async function runSandbox(hcPath, holochainPath, sbPath, adminPort) {
     child_process.spawn("lair-keystore", [], {
         stdio: "inherit",
@@ -30,7 +35,7 @@ export async function runSandbox(hcPath, holochainPath, sbPath, adminPort) {
     });
     await sleep(500);
     
-    let res = child_process.spawn(`${hcPath}`, ["sandbox", "-f", adminPort, "--holochain-path", `${holochainPath}`, "run", "-e", sbPath],
+    let hcProcess = child_process.spawn(`${hcPath}`, ["sandbox", "-f", adminPort, "--holochain-path", `${holochainPath}`, "run", "-e", sbPath],
         {
             stdio: "inherit",
             env: {
@@ -41,12 +46,12 @@ export async function runSandbox(hcPath, holochainPath, sbPath, adminPort) {
     );
     process.on("SIGINT", function () {
         fs.unlinkSync(`${sbPath}/keystore/pid`)
-        res.kill("SIGINT");
+        hcProcess.kill("SIGINT");
         process.exit();
     });
 
     await sleep(3000);
-    return res;
+    return hcProcess;
 }
 
 export function cleanSandboxes(hcPath) {
