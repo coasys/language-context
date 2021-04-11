@@ -43,7 +43,7 @@ export default class HolochainService {
         console.log("HolochainService: Running with sanboxes:", sandboxes, "and using sandbox:", sandboxes[0]);
         this.#sbPath = sandboxes[0];
 
-        runSandbox(`${resourcePath}/hc`, `${resourcePath}/holochain`, sandboxes[0], holochainAdminPort).then(async result => {
+        runSandbox(`${resourcePath}/lair-keystore`, `${resourcePath}/hc`, `${resourcePath}/holochain`, sandboxes[0], holochainAdminPort).then(async result => {
             console.log("HolochainService: Sandbox running... Attempting connection\n\n\n");
             this.#hcProcess = result;
             try {

@@ -28,8 +28,8 @@ export function stopProcesses(sbPath, hcProcess) {
     hcProcess.kill("SIGINT");
 }
 
-export async function runSandbox(hcPath, holochainPath, sbPath, adminPort) {
-    child_process.spawn("lair-keystore", [], {
+export async function runSandbox(lairPath, hcPath, holochainPath, sbPath, adminPort) {
+    child_process.spawn(`${lairPath}`, [], {
         stdio: "inherit",
         env: { ...process.env, LAIR_DIR: `${sbPath}/keystore` },
     });
