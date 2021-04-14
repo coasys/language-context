@@ -4,9 +4,9 @@ import FileSync from 'lowdb/adapters/FileSync'
 import path from 'path'
 import fs from 'fs'
 import HolochainLanguageDelegate from "./HolochainLanguageDelegate"
-import {runSandbox, readSandboxes, createSandbox, stopProcesses} from "./hc-execution"
+import {runSandbox, readSandboxes, createSandbox, stopProcesses, unpackDna, packDna} from "./hc-execution"
 import type Dna from "./dna"
-import { ChildProcess } from 'child_process'
+import type { ChildProcess } from 'child_process'
 
 export const fakeCapSecret = (): CapSecret => Buffer.from(Array(64).fill('aa').join(''), 'hex')
 
@@ -20,6 +20,7 @@ export default class HolochainService {
     #ready: Promise<void>
     #sbPath: string
     #hcProcess: ChildProcess
+    #resourcePath: string
 
     constructor(sandboxPath, dataPath, resourcePath) {
         let resolveReady
@@ -32,18 +33,19 @@ export default class HolochainService {
 
         const holochainAppPort = 1337;
         const holochainAdminPort = 2000;
+        this.#resourcePath = resourcePath;
 
         console.log("HolochainService: attempting to read sandboxes");
         let sandboxes = readSandboxes(`${resourcePath}/hc`);
         console.log("HolochainService: found sandboxes", sandboxes);
         if (sandboxes.length == 0) {
-            createSandbox(`${resourcePath}/hc`, sandboxPath);
+            createSandbox(`${this.#resourcePath}/hc`, sandboxPath);
         };
-        sandboxes = readSandboxes(`${resourcePath}/hc`);
+        sandboxes = readSandboxes(`${this.#resourcePath}/hc`);
         console.log("HolochainService: Running with sanboxes:", sandboxes, "and using sandbox:", sandboxes[0]);
         this.#sbPath = sandboxes[0];
 
-        runSandbox(`${resourcePath}/lair-keystore`, `${resourcePath}/hc`, `${resourcePath}/holochain`, sandboxes[0], holochainAdminPort).then(async result => {
+        runSandbox(`${this.#resourcePath}/lair-keystore`, `${this.#resourcePath}/hc`, `${this.#resourcePath}/holochain`, sandboxes[0], holochainAdminPort).then(async result => {
             console.log("HolochainService: Sandbox running... Attempting connection\n\n\n");
             this.#hcProcess = result;
             try {
@@ -64,6 +66,14 @@ export default class HolochainService {
 
     stop() {
         stopProcesses(this.#sbPath, this.#hcProcess)
+    }
+
+    unpackDna(dnaPath: string): string {
+        return unpackDna(`${this.#resourcePath}/hc`, dnaPath)
+    }
+
+    packDna(workdirPath: string): string {
+        return packDna(`${this.#resourcePath}/hc`, workdirPath)
     }
 
     async pubKeyForLanguage(lang: string): Promise<AgentPubKey> {

@@ -1,6 +1,9 @@
 import child_process from "child_process";
 import fs from "fs";
 
+//This may be needed as bootstrap url on sandboxes to help them find eachother
+const bootStrapUrl = ""
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -26,6 +29,14 @@ export function readSandboxes(hcPath) {
 export function stopProcesses(sbPath, hcProcess) {
     fs.unlinkSync(`${sbPath}/keystore/pid`)
     hcProcess.kill("SIGINT");
+}
+
+export function unpackDna(hcPath, dnaPath) {
+    return child_process.execSync(`${hcPath} dna unpack ${dnaPath}`).toString();
+}
+
+export function packDna(hcPath, workdirPath) {
+    return child_process.execSync(`${hcPath} dna pack ${workdirPath}`).toString();
 }
 
 export async function runSandbox(lairPath, hcPath, holochainPath, sbPath, adminPort) {
