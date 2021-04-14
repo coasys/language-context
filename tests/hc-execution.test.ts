@@ -10,7 +10,7 @@ describe('Language Context', () => {
         let res = readSandboxes("./bin/hc");
         expect(res).toHaveLength(1);
 
-        let start = await runSandbox("./bin/hc", "./bin/holochain", res[0], 1000);
+        let start = await runSandbox("./bin/lair-keystore", "./bin/hc", "./bin/holochain", res[0], 1000);
         console.log("Started with", start);
 
         sleep(1000);
