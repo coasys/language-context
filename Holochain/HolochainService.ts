@@ -54,7 +54,8 @@ export default class HolochainService {
 
                 console.debug("HolochainService: Holochain admin interface connected on port", this.#adminPort)
                 this.#appPort = holochainAppPort;
-                //this.#adminWebsocket.attachAppInterface({ port: this.#appPort })
+                //TODO: this should return error vs exception, PR on HC repo
+                this.#adminWebsocket.attachAppInterface({ port: this.#appPort })
                 this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`)
                 console.debug("HolochainService: Holochain app interface connected on port", this.#appPort)
                 resolveReady()
@@ -176,14 +177,15 @@ export default class HolochainService {
             return null
         }
 
-        const cell = cell_data.find(c => c[1] === dnaNick)
+        const cell = cell_data.find(c => c.cell_nick === dnaNick)
         if(!cell) {
             const e = new Error(`No DNA with nick '${dnaNick}' found for language ${installed_app_id}`)
             console.error(e)
             return e
         }
 
-        const cell_id = cell[0]
+        console.debug("HolochainService: found cell", cell);
+        const cell_id = cell.cell_id
         const [_dnaHash, provenance] = cell_id
 
         try {
