@@ -26,9 +26,10 @@ export function readSandboxes(hcPath) {
     }
 }
 
-export function stopProcesses(sbPath, hcProcess) {
+export function stopProcesses(sbPath, hcProcess, lairProcess) {
     fs.unlinkSync(`${sbPath}/keystore/pid`)
     hcProcess.kill("SIGINT");
+    lairProcess.kill("SIGINT");
 }
 
 export function unpackDna(hcPath, dnaPath) {
@@ -40,7 +41,7 @@ export function packDna(hcPath, workdirPath) {
 }
 
 export async function runSandbox(lairPath, hcPath, holochainPath, sbPath, adminPort) {
-    child_process.spawn(`${lairPath}`, [], {
+    let lairProcess = child_process.spawn(`${lairPath}`, [], {
         stdio: "inherit",
         env: { ...process.env, LAIR_DIR: `${sbPath}/keystore` },
     });
@@ -58,11 +59,12 @@ export async function runSandbox(lairPath, hcPath, holochainPath, sbPath, adminP
     process.on("SIGINT", function () {
         fs.unlinkSync(`${sbPath}/keystore/pid`)
         hcProcess.kill("SIGINT");
+        lairProcess.kill("SIGINT");
         process.exit();
     });
 
     await sleep(3000);
-    return hcProcess;
+    return [hcProcess, lairProcess];
 }
 
 export function cleanSandboxes(hcPath) {

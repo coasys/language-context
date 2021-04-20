@@ -20,6 +20,7 @@ export default class HolochainService {
     #ready: Promise<void>
     #sbPath: string
     #hcProcess: ChildProcess
+    #lairProcess: ChildProcess
     #resourcePath: string
 
     constructor(sandboxPath, dataPath, resourcePath) {
@@ -47,7 +48,7 @@ export default class HolochainService {
 
         runSandbox(`${this.#resourcePath}/lair-keystore`, `${this.#resourcePath}/hc`, `${this.#resourcePath}/holochain`, sandboxes[0], holochainAdminPort).then(async result => {
             console.log("HolochainService: Sandbox running... Attempting connection\n\n\n");
-            this.#hcProcess = result;
+            [this.#hcProcess, this.#lairProcess] = result;
             try {
                 this.#adminPort = holochainAdminPort;
                 this.#adminWebsocket = await AdminWebsocket.connect(`ws://localhost:${this.#adminPort}`)
@@ -66,7 +67,7 @@ export default class HolochainService {
     }
 
     stop() {
-        stopProcesses(this.#sbPath, this.#hcProcess)
+        stopProcesses(this.#sbPath, this.#hcProcess, this.#lairProcess)
     }
 
     unpackDna(dnaPath: string): string {
@@ -117,7 +118,6 @@ export default class HolochainService {
                     const hash = await this.#adminWebsocket.registerDna({
                         path: p
                     })
-                    console.log("Installing DNA");
                     await this.#adminWebsocket.installApp({
                         installed_app_id: lang, agent_key: pubKey, dnas: [{hash: hash, nick: dna.nick}]
                     })
