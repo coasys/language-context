@@ -57,7 +57,7 @@ export default class HolochainService {
                 this.#appPort = holochainAppPort;
                 //TODO: this should return error vs exception, PR on HC repo
                 this.#adminWebsocket.attachAppInterface({ port: this.#appPort })
-                this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`)
+                this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`, 40000)
                 console.debug("HolochainService: Holochain app interface connected on port", this.#appPort)
                 resolveReady()
             } catch(e) {
@@ -155,7 +155,7 @@ export default class HolochainService {
     async callZomeFunction(lang: string, dnaNick: string, zomeName: string, fnName: string, payload: object): Promise<any> {
         await this.#ready
         const installed_app_id = lang
-        console.debug("HolochainService.callZomefunction: getting info for app:", installed_app_id)
+        //console.debug("HolochainService.callZomefunction: getting info for app:", installed_app_id)
         let infoResult = await this.#appWebsocket.appInfo({installed_app_id})
         let tries = 1
         while(!infoResult && tries < 10) {
@@ -170,7 +170,7 @@ export default class HolochainService {
             throw new Error("No DNA installed")
         }
 
-        console.debug("HolochainService.callZomefunction: get info result:", infoResult)
+        //console.debug("HolochainService.callZomefunction: get info result:", infoResult)
         const { cell_data } = infoResult
         if(cell_data.length === 0) {
             console.error("HolochainService: tried to call zome function without any installed cell!")
@@ -184,12 +184,12 @@ export default class HolochainService {
             return e
         }
 
-        console.debug("HolochainService: found cell", cell);
+        //console.debug("HolochainService: found cell", cell);
         const cell_id = cell.cell_id
         const [_dnaHash, provenance] = cell_id
 
         try {
-            console.debug("HolochainService calling zome function:", dnaNick, zomeName, fnName, payload)
+            //console.debug("\x1b[31m", "HolochainService calling zome function:", dnaNick, zomeName, fnName, payload)
             const result = await this.#appWebsocket.callZome({
                 cap: fakeCapSecret(),
                 cell_id,
@@ -198,10 +198,10 @@ export default class HolochainService {
                 provenance,
                 payload
             })
-            console.debug("HolochainService zome function result:", result)
+            console.debug("\x1b[32m", "HolochainService zome function result:", result)
             return result
         } catch(e) {
-            console.error("HolochainService: ERROR calling zome function:", e)
+            console.error("\x1b[31m", "HolochainService: ERROR calling zome function:", e)
             return e
         }
     }
