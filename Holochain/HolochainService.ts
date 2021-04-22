@@ -1,4 +1,4 @@
-import { AdminWebsocket, AgentPubKey, AppWebsocket, CapSecret } from '@holochain/conductor-api'
+import { AdminWebsocket, AgentPubKey, AppSignalCb, AppWebsocket, CapSecret, AppSignal } from '@holochain/conductor-api'
 import low from 'lowdb'
 import FileSync from 'lowdb/adapters/FileSync'
 import path from 'path'
@@ -22,10 +22,14 @@ export default class HolochainService {
     #hcProcess: ChildProcess
     #lairProcess: ChildProcess
     #resourcePath: string
+    //Map{dnaHashBuffer: [callbackFn, langHash]}
+    #signalCallbacks: Map<Buffer, [AppSignalCb, string]> = new Map();
+    #globalCallback: (signal: [AppSignal, string]) => void | undefined;
 
-    constructor(sandboxPath, dataPath, resourcePath) {
+    constructor(sandboxPath, dataPath, resourcePath, globalCallback) {
         let resolveReady
         this.#ready = new Promise(resolve => resolveReady = resolve)
+        this.#globalCallback = globalCallback;
 
         console.log("HolochainService: Creating low-db instance for holochain-serivce");
         this.#dataPath = dataPath
@@ -57,13 +61,23 @@ export default class HolochainService {
                 this.#appPort = holochainAppPort;
                 //TODO: this should return error vs exception, PR on HC repo
                 this.#adminWebsocket.attachAppInterface({ port: this.#appPort })
-                this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`, 40000)
+                this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`, 40000, this.handleCallback)
                 console.debug("HolochainService: Holochain app interface connected on port", this.#appPort)
                 resolveReady()
             } catch(e) {
                 console.error("HolochainService: Error intializing Holochain conductor:", e)
             }
         })
+    }
+
+    handleCallback(signal: AppSignal) {
+        let callbacks = this.#signalCallbacks.get(signal.data.cellId[0])
+        if (callbacks[0] != undefined) {
+            callbacks[0](signal);
+        };
+        if (this.#globalCallback != undefined) {
+            this.#globalCallback([signal, callbacks[1]])
+        };
     }
 
     stop() {
@@ -79,7 +93,6 @@ export default class HolochainService {
     }
 
     async pubKeyForLanguage(lang: string): Promise<AgentPubKey> {
-        //lang = "static2";
         const alreadyExisting = this.#db.get('pubKeys').find({lang}).value()
         if(alreadyExisting) {
             console.debug("Found existing pubKey entry", alreadyExisting, "for language:", lang)
@@ -94,7 +107,7 @@ export default class HolochainService {
         }
     }
 
-    async ensureInstallDNAforLanguage(lang: string, dnas: Dna[]) {
+    async ensureInstallDNAforLanguage(lang: string, dnas: Dna[], callback: AppSignalCb | undefined) {
         await this.#ready
 
         const activeApps = await this.#adminWebsocket.listActiveApps();
@@ -118,6 +131,7 @@ export default class HolochainService {
                     const hash = await this.#adminWebsocket.registerDna({
                         path: p
                     })
+                    this.#signalCallbacks.set(hash, [callback, lang]);
                     await this.#adminWebsocket.installApp({
                         installed_app_id: lang, agent_key: pubKey, dnas: [{hash: hash, nick: dna.nick}]
                     })
