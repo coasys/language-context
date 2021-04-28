@@ -55,14 +55,17 @@ export default class HolochainService {
             [this.#hcProcess, this.#lairProcess] = result;
             try {
                 this.#adminPort = holochainAdminPort;
-                this.#adminWebsocket = await AdminWebsocket.connect(`ws://localhost:${this.#adminPort}`)
-
-                console.debug("HolochainService: Holochain admin interface connected on port", this.#adminPort)
                 this.#appPort = holochainAppPort;
-                //TODO: this should return error vs exception, PR on HC repo
-                this.#adminWebsocket.attachAppInterface({ port: this.#appPort })
-                this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`, 40000, this.handleCallback)
-                console.debug("HolochainService: Holochain app interface connected on port", this.#appPort)
+                if (this.#adminWebsocket == undefined) {
+                    this.#adminWebsocket = await AdminWebsocket.connect(`ws://localhost:${this.#adminPort}`)
+                    this.#adminWebsocket.attachAppInterface({ port: this.#appPort })
+                    console.debug("HolochainService: Holochain admin interface connected on port", this.#adminPort);
+                };
+                if (this.#appWebsocket == undefined) {
+                    //TODO: there might need to be a sleep here
+                    this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`, 100000, this.handleCallback)
+                    console.debug("HolochainService: Holochain app interface connected on port", this.#appPort)
+                };
                 resolveReady()
             } catch(e) {
                 console.error("HolochainService: Error intializing Holochain conductor:", e)
@@ -71,6 +74,7 @@ export default class HolochainService {
     }
 
     handleCallback(signal: AppSignal) {
+        console.log("HolochainService.handleCallback: Got callback", signal);
         let callbacks = this.#signalCallbacks.get(signal.data.cellId[0])
         if (callbacks[0] != undefined) {
             callbacks[0](signal);
@@ -95,14 +99,13 @@ export default class HolochainService {
     async pubKeyForLanguage(lang: string): Promise<AgentPubKey> {
         const alreadyExisting = this.#db.get('pubKeys').find({lang}).value()
         if(alreadyExisting) {
-            console.debug("Found existing pubKey entry", alreadyExisting, "for language:", lang)
-            const pubKey = Buffer.from(alreadyExisting.pubKey.data)
-            console.debug("Found existing pubKey", pubKey, "for language:", lang)
+            const pubKey = Buffer.from(alreadyExisting.pubKey)
+            console.debug("Found existing pubKey", pubKey.toString("base64"), "for language:", lang)
             return pubKey
         } else {
             const pubKey = await this.#adminWebsocket.generateAgentPubKey()
             this.#db.get('pubKeys').push({lang, pubKey}).write()
-            console.debug("Created new pubKey", pubKey, "for language", lang)
+            console.debug("Created new pubKey", pubKey.toString("base64"), "for language", lang)
             return pubKey
         }
     }
@@ -111,7 +114,7 @@ export default class HolochainService {
         await this.#ready
 
         const activeApps = await this.#adminWebsocket.listActiveApps();
-        console.log("HolochainService: Found running apps:", activeApps);
+        //console.log("HolochainService: Found running apps:", activeApps);
         if(!activeApps.includes(lang)) {
 
             let installed
