@@ -2,14 +2,14 @@ import child_process from "child_process";
 import fs from "fs";
 
 //This may be needed as bootstrap url on sandboxes to help them find eachother
-const bootStrapUrl = ""
+const bootStrapUrl = "https://bootstrap-staging.holo.host"
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export function createSandbox(hcPath, sbPath) {
-    return child_process.execSync(`${hcPath} sandbox create --root ${sbPath} network quic`).toString();
+    return child_process.execSync(`${hcPath} sandbox create --root ${sbPath} network --bootstrap ${bootStrapUrl} quic`).toString();
 }
 
 export function readSandboxes(hcPath) {
