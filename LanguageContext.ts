@@ -9,7 +9,10 @@ export default interface LanguageContext {
     storageDirectory: string;
     customSettings: object;
     Holochain: HolochainLanguageDelegate | void;
+    ad4mSignal: Ad4mSignalCB;
 }
+
+export type Ad4mSignalCB = (signal: any) => void
 
 export interface IPFSNode {
     add(data: object): Promise<object>
