@@ -23,18 +23,17 @@ export default class HolochainService {
     #lairProcess: ChildProcess
     #resourcePath: string
     //Map{dnaHashBuffer: [callbackFn, langHash]}
-    #signalCallbacks: Map<Buffer, [AppSignalCb, string]> = new Map();
-    #globalCallback: (signal: [AppSignal, string]) => void | undefined;
+    signalCallbacks: Map<string, [AppSignalCb, string]>;
 
-    constructor(sandboxPath, dataPath, resourcePath, globalCallback) {
+    constructor(sandboxPath, dataPath, resourcePath) {
         let resolveReady
         this.#ready = new Promise(resolve => resolveReady = resolve)
-        this.#globalCallback = globalCallback;
 
         console.log("HolochainService: Creating low-db instance for holochain-serivce");
         this.#dataPath = dataPath
         this.#db = low(new FileSync(path.join(dataPath, 'holochain-service.json')))
         this.#db.defaults({pubKeys: []}).write()
+        this.signalCallbacks = new Map();
 
         const holochainAppPort = 1337;
         const holochainAdminPort = 2000;
@@ -63,7 +62,7 @@ export default class HolochainService {
                 };
                 if (this.#appWebsocket == undefined) {
                     //TODO: there might need to be a sleep here
-                    this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`, 100000, this.handleCallback)
+                    this.#appWebsocket = await AppWebsocket.connect(`ws://localhost:${this.#appPort}`, 100000, this.handleCallback.bind(this))
                     console.debug("HolochainService: Holochain app interface connected on port", this.#appPort)
                 };
                 resolveReady()
@@ -74,13 +73,10 @@ export default class HolochainService {
     }
 
     handleCallback(signal: AppSignal) {
-        console.log("HolochainService.handleCallback: Got callback", signal);
-        let callbacks = this.#signalCallbacks.get(signal.data.cellId[0])
+        console.log("HolochainService.handleCallback: Got callback", signal, this);
+        let callbacks = this.signalCallbacks.get(signal.data.cellId[0].toString("base64"))
         if (callbacks[0] != undefined) {
             callbacks[0](signal);
-        };
-        if (this.#globalCallback != undefined) {
-            this.#globalCallback([signal, callbacks[1]])
         };
     }
 
@@ -134,7 +130,10 @@ export default class HolochainService {
                     const hash = await this.#adminWebsocket.registerDna({
                         path: p
                     })
-                    this.#signalCallbacks.set(hash, [callback, lang]);
+                    if (callback != undefined) {
+                        console.log("HolochainService: setting holochains signal callback for language", lang);
+                        this.signalCallbacks.set(hash.toString("base64"), [callback, lang]);
+                    };
                     await this.#adminWebsocket.installApp({
                         installed_app_id: lang, agent_key: pubKey, dnas: [{hash: hash, nick: dna.nick}]
                     })

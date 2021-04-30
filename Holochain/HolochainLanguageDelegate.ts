@@ -1,5 +1,6 @@
 import type Dna from './dna'
 import type HolochainService from './HolochainService'
+import type { AppSignalCb } from '@holochain/conductor-api'
 
 export default class HolochainLanguageDelegate {
     #languageHash
@@ -10,8 +11,8 @@ export default class HolochainLanguageDelegate {
         this.#holochainService = holochainService
     }
 
-    async registerDNAs(dnas: Dna[]) {
-        return this.#holochainService.ensureInstallDNAforLanguage(this.#languageHash, dnas)
+    async registerDNAs(dnas: Dna[], holochainSignalCallback?: AppSignalCb) {
+        return this.#holochainService.ensureInstallDNAforLanguage(this.#languageHash, dnas, holochainSignalCallback)
     }
 
     async call(dnaNick: string, zomeName: string, fnName: string, params: object|string): Promise<any> {
