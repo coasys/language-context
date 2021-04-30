@@ -1,6 +1,6 @@
 import type HolochainLanguageDelegate from "./Holochain/HolochainLanguageDelegate";
-import type AgentService from "ad4m/AgentService";
-import type SignaturesService from "ad4m/SignaturesService";
+import type AgentService from "@perspect3vism/ad4m/AgentService";
+import type SignaturesService from "@perspect3vism/ad4m/SignaturesService";
 
 export default interface LanguageContext {
     agent: AgentService;

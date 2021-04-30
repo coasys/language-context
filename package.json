@@ -12,8 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "@holochain/conductor-api": "0.0.3",
+    "@perspect3vism/ad4m": "0.0.3",
     "@types/node": "^14.14.37",
-    "ad4m": "file:../ad4m",
     "lowdb": "^1.0.0"
   },
   "devDependencies": {
