@@ -1,6 +1,6 @@
 {
-  "name": "language-context",
-  "version": "1.0.0",
+  "name": "@perspect3vism/ad4m-language-context",
+  "version": "0.0.1",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -8,8 +8,24 @@
     "test": "jest",
     "coverage": "jest --coverage"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/perspect3vism/language-context.git"
+  },
+  "author": {
+    "name": "Nicolas Luck",
+    "email": "nicolas@lucksus.eu"
+  },
+  "contributors": [
+    {
+      "name": "Joshua Parkin",
+      "email": "joshuadparkin@gmail.com"
+    }
+  ],
+  "license": "CAL-1.0",
+  "bugs": {
+    "url": "https://github.com/perspect3vism/language-context/issues"
+  },
   "dependencies": {
     "@holochain/conductor-api": "0.0.3",
     "@perspect3vism/ad4m": "0.0.3",
