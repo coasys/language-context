@@ -24,7 +24,7 @@ export function readSandboxes(hcPath) {
     } else {
         let linesOut = [];
         lines.slice(2, -2).forEach(val => {
-            linesOut.push(val.substring(3));
+            linesOut.push(escapeShellArg(val.substring(3)));
         });
         return linesOut;
     }
@@ -51,7 +51,7 @@ export async function runSandbox(lairPath, hcPath, holochainPath, sbPath, adminP
     });
     await sleep(500);
     
-    let hcProcess = child_process.spawn(`${escapeShellArg(hcPath)}`, ["sandbox", "-f", adminPort, "--holochain-path", `${escapeShellArg(holochainPath)}`, "run", "-e", sbPath],
+    let hcProcess = child_process.spawn(`${escapeShellArg(hcPath)}`, ["sandbox", "-f", adminPort, "--holochain-path", `${escapeShellArg(holochainPath)}`, "run", "-e", escapeShellArg(sbPath)],
         {
             stdio: "inherit",
             env: {
