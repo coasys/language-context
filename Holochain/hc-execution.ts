@@ -3,6 +3,7 @@ import fs from "fs";
 
 //This may be needed as bootstrap url on sandboxes to help them find eachother
 const bootStrapUrl = "https://bootstrap-staging.holo.host"
+const kitsuneProxy = "kitsune-proxy://t9471bRVOKH-HMInwG5jqwk3KBiiSmiEhy6F5Cu_8ys/kitsune-quic/h/52.14.147.62/p/22224/--"
 
 function escapeShellArg (arg) {
     return arg.replace(" ", "\\\ ");
@@ -13,7 +14,7 @@ function sleep(ms) {
 }
 
 export function createSandbox(hcPath, sbPath) {
-    return child_process.execSync(`${escapeShellArg(hcPath)} sandbox create --root ${escapeShellArg(sbPath)} network --bootstrap ${bootStrapUrl} quic`).toString();
+    return child_process.execSync(`${escapeShellArg(hcPath)} sandbox create --root ${escapeShellArg(sbPath)} network --bootstrap ${bootStrapUrl} quic -p ${kitsuneProxy}`).toString();
 }
 
 export function readSandboxes(hcPath) {
