@@ -73,10 +73,12 @@ export default class HolochainService {
     }
 
     handleCallback(signal: AppSignal) {
-        console.log("HolochainService.handleCallback: Got callback", signal, this);
-        let callbacks = this.signalCallbacks.get(signal.data.cellId[0].toString("base64"))
-        if (callbacks[0] != undefined) {
-            callbacks[0](signal);
+        console.log("GOT CALLBACK FROM HC, checking against language callbacks", this.signalCallbacks);
+        if (this.signalCallbacks.size != 0) {
+            let callbacks = this.signalCallbacks.get(signal.data.cellId[1].toString("base64"))
+            if (callbacks[0] != undefined) {
+                callbacks[0](signal);
+            };
         };
     }
 
@@ -108,6 +110,11 @@ export default class HolochainService {
 
     async ensureInstallDNAforLanguage(lang: string, dnas: Dna[], callback: AppSignalCb | undefined) {
         await this.#ready
+        const pubKey = await this.pubKeyForLanguage(lang);
+        if (callback != undefined) {
+            console.log("HolochainService: setting holochains signal callback for language", lang);
+            this.signalCallbacks.set(pubKey.toString("base64"), [callback, lang]);
+        };
 
         const activeApps = await this.#adminWebsocket.listActiveApps();
         //console.log("HolochainService: Found running apps:", activeApps);
@@ -125,15 +132,10 @@ export default class HolochainService {
                 for (let dna of dnas) {
                     //console.log("HolochainService: Installing DNA:", dna, "at data path:", this.#dataPath, "\n");
                     const p = path.join(this.#dataPath, `${lang}-${dna.nick}.dna`);
-                    const pubKey = await this.pubKeyForLanguage(lang);
                     fs.writeFileSync(p, dna.file);
                     const hash = await this.#adminWebsocket.registerDna({
                         path: p
                     })
-                    if (callback != undefined) {
-                        console.log("HolochainService: setting holochains signal callback for language", lang);
-                        this.signalCallbacks.set(hash.toString("base64"), [callback, lang]);
-                    };
                     await this.#adminWebsocket.installApp({
                         installed_app_id: lang, agent_key: pubKey, dnas: [{hash: hash, nick: dna.nick}]
                     })
