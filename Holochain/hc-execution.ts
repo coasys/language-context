@@ -3,7 +3,7 @@ import fs from "fs";
 
 //This may be needed as bootstrap url on sandboxes to help them find eachother
 const bootStrapUrl = "https://bootstrap-staging.holo.host"
-const kitsuneProxy = "kitsune-proxy://t9471bRVOKH-HMInwG5jqwk3KBiiSmiEhy6F5Cu_8ys/kitsune-quic/h/52.14.147.62/p/22224/--"
+const kitsuneProxy = "kitsune-proxy://SYVd4CF3BdJ4DS7KwLLgeU3_DbHoZ34Y-qroZ79DOs8/kitsune-quic/h/165.22.32.11/p/5779/--"
 
 function escapeShellArg (arg) {
     return arg.replace(" ", "\\\ ");
