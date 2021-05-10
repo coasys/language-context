@@ -3,6 +3,12 @@
   "version": "0.0.2",
   "description": "",
   "main": "lib/index.js",
+  "files": [
+    "lib",
+    "LanguageContext.ts",
+    "Holochain",
+    "index.ts"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "jest",
