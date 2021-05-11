@@ -73,7 +73,7 @@ export default class HolochainService {
     }
 
     handleCallback(signal: AppSignal) {
-        console.log("GOT CALLBACK FROM HC, checking against language callbacks", this.signalCallbacks);
+        // console.log(new Date().toISOString(), "GOT CALLBACK FROM HC, checking against language callbacks");
         if (this.signalCallbacks.size != 0) {
             let callbacks = this.signalCallbacks.get(signal.data.cellId[1].toString("base64"))
             if (callbacks[0] != undefined) {
@@ -123,7 +123,7 @@ export default class HolochainService {
             let installed
             // 1. install app
             try {
-                console.debug("HolochainService: Installing DNAs for language", lang)
+                console.debug("HolochainService: Installing DNAs for language", lang, "DNA hash:");
                 // console.debug(dnaFile)
                 // let installedCellIds = await this.#adminWebsocket.listCellIds()
                 // console.debug("HolochainService: Installed cells before:", installedCellIds)
@@ -207,7 +207,7 @@ export default class HolochainService {
         const [_dnaHash, provenance] = cell_id
 
         try {
-            //console.debug("\x1b[31m", "HolochainService calling zome function:", dnaNick, zomeName, fnName, payload)
+            console.debug("\x1b[31m", new Date().toISOString(), "HolochainService calling zome function:", dnaNick, zomeName, fnName, payload)
             const result = await this.#appWebsocket.callZome({
                 cap: fakeCapSecret(),
                 cell_id,
@@ -216,7 +216,7 @@ export default class HolochainService {
                 provenance,
                 payload
             })
-            console.debug("\x1b[32m", "HolochainService zome function result:", result)
+            console.debug("\x1b[32m", new Date().toISOString(),"HolochainService zome function result:", result)
             return result
         } catch(e) {
             console.error("\x1b[31m", "HolochainService: ERROR calling zome function:", e)
