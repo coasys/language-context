@@ -123,7 +123,7 @@ export default class HolochainService {
             let installed
             // 1. install app
             try {
-                console.debug("HolochainService: Installing DNAs for language", lang, "DNA hash:");
+                console.debug("HolochainService: Installing DNAs for language", lang);
                 // console.debug(dnaFile)
                 // let installedCellIds = await this.#adminWebsocket.listCellIds()
                 // console.debug("HolochainService: Installed cells before:", installedCellIds)
