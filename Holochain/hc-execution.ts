@@ -6,7 +6,7 @@ const bootStrapUrl = "https://bootstrap-staging.holo.host"
 const kitsuneProxy = "kitsune-proxy://SYVd4CF3BdJ4DS7KwLLgeU3_DbHoZ34Y-qroZ79DOs8/kitsune-quic/h/165.22.32.11/p/5779/--"
 
 function escapeShellArg (arg) {
-    return arg.replace(" ", "\\\ ");
+    return arg.replace(" ", "\ ");
 }
 
 function sleep(ms) {
@@ -14,7 +14,7 @@ function sleep(ms) {
 }
 
 export function createSandbox(hcPath, sbPath) {
-    return child_process.execSync(`${escapeShellArg(hcPath)} sandbox create --root ${escapeShellArg(sbPath)} network --bootstrap ${bootStrapUrl} quic -p ${kitsuneProxy}`).toString();
+    return child_process.execFileSync(`${escapeShellArg(hcPath)}`, ["sandbox", "create", "--root", sbPath, "network", "--bootstrap", `${bootStrapUrl}`, "quic", "-p", `${kitsuneProxy}`]).toString();
 }
 
 export function readSandboxes(hcPath) {
@@ -38,11 +38,11 @@ export function stopProcesses(sbPath, hcProcess, lairProcess) {
 }
 
 export function unpackDna(hcPath, dnaPath) {
-    return child_process.execSync(`${escapeShellArg(hcPath)} dna unpack ${escapeShellArg(dnaPath)}`).toString();
+    return child_process.execFileSync(`${escapeShellArg(hcPath)}`, ["dna", "unpack", `${escapeShellArg(dnaPath)}`]).toString();
 }
 
 export function packDna(hcPath, workdirPath) {
-    return child_process.execSync(`${escapeShellArg(hcPath)} dna pack ${escapeShellArg(workdirPath)}`).toString();
+    return child_process.execFileSync(`${escapeShellArg(hcPath)}`, ["dna", "pack", `${escapeShellArg(workdirPath)}`]).toString();
 }
 
 export async function runSandbox(lairPath, hcPath, holochainPath, sbPath, adminPort) {
@@ -68,7 +68,7 @@ export async function runSandbox(lairPath, hcPath, holochainPath, sbPath, adminP
         process.exit();
     });
 
-    await sleep(3000);
+    await sleep(5000);
     return [hcProcess, lairProcess];
 }
 
