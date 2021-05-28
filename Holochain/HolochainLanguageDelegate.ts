@@ -12,7 +12,7 @@ export default class HolochainLanguageDelegate {
     }
 
     async registerDNAs(dnas: Dna[], holochainSignalCallback?: AppSignalCb) {
-        return this.#holochainService.ensureInstallDNAforLanguage(this.#languageHash, dnas, holochainSignalCallback)
+        return await this.#holochainService.ensureInstallDNAforLanguage(this.#languageHash, dnas, holochainSignalCallback)
     }
 
     async call(dnaNick: string, zomeName: string, fnName: string, params: object|string): Promise<any> {
