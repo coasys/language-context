@@ -13,8 +13,16 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export function createSandbox(hcPath, sbPath) {
-    return child_process.execFileSync(`${escapeShellArg(hcPath)}`, ["sandbox", "create", "--root", sbPath, "network", "--bootstrap", `${bootStrapUrl}`, "quic", "-p", `${kitsuneProxy}`]).toString();
+export async function createSandbox(hcPath, sbPath) {
+    let res = await child_process.execFile(`${escapeShellArg(hcPath)}`, ["sandbox", "create", "--root", sbPath, "network", "--bootstrap", `${bootStrapUrl}`, "quic", "-p", `${kitsuneProxy}`], (error, stdout, stderr) => {
+        if (error) {
+            console.error('stderr', stderr);
+            throw error;
+        }
+        console.log('stdout', stdout);
+    }).toString();
+    console.log("Got res creating sandbox", res);
+    return res
 }
 
 export function readSandboxes(hcPath) {
